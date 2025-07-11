@@ -12,7 +12,7 @@ redef LogAscii::use_json = T;
 
 # Configurações para Notice (alertas)
 # Habilita logs de notice para todos os alertas
-redef Notice::policy += {
-    [$pred(n: Notice::Info) = { return T; },
-     $action = Notice::ACTION_LOG]
-};
+hook Notice::policy(n: Notice::Info)
+{
+    add n$actions[Notice::ACTION_LOG];
+}
