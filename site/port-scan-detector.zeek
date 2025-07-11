@@ -18,9 +18,9 @@ export {
     };
 
     # Configurações
-    global port_scan_threshold = 10;  # Número de portas diferentes para considerar port scan
+    global port_scan_threshold = 3;   # Número de portas diferentes para considerar port scan (reduzido para teste)
     global time_window = 5min;        # Janela de tempo para análise
-    global closed_port_threshold = 5;  # Tentativas em portas fechadas
+    global closed_port_threshold = 3;  # Tentativas em portas fechadas (reduzido para teste)
 }
 
 # Estrutura para rastrear tentativas de conexão

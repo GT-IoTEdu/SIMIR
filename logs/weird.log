@@ -1,3 +1,1 @@
-{"ts":1752200131.613872,"uid":"CB9BIl43uWEMcoSgs1","id.orig_h":"192.168.50.10","id.orig_p":50763,"id.resp_h":"96.6.220.101","id.resp_p":443,"name":"bad_TCP_checksum","notice":false,"peer":"zeek","source":"TCP"}
-{"ts":1752200159.782433,"uid":"COJVJ9PwaGrOnOLK4","id.orig_h":"192.168.50.1","id.orig_p":35071,"id.resp_h":"239.255.255.250","id.resp_p":1900,"name":"bad_UDP_checksum","notice":false,"peer":"zeek","source":"UDP"}
-{"ts":1752200251.233238,"uid":"CvcR42llMX8wErqAe","id.orig_h":"192.168.50.10","id.orig_p":68,"id.resp_h":"192.168.50.1","id.resp_p":67,"name":"bad_UDP_checksum","notice":false,"peer":"zeek","source":"UDP"}
+{"ts":1752201693.587211,"uid":"CdOfdw3JICIAaSeMe9","id.orig_h":"192.168.50.10","id.orig_p":50897,"id.resp_h":"96.6.220.101","id.resp_p":443,"name":"bad_TCP_checksum","notice":false,"peer":"zeek","source":"TCP"}

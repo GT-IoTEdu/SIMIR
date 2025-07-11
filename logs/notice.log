@@ -1,2 +1,2 @@
-{"ts":1752200196.499146,"note":"PortScan::Closed_Port_Access","msg":"Múltiplas tentativas em portas fechadas de 192.168.50.10 (5 tentativas)","src":"192.168.50.10","actions":["Notice::ACTION_LOG"],"email_dest":[],"suppress_for":3600.0}
-{"ts":1752200196.50048,"note":"PortScan::Port_Scan","msg":"Port scan detectado de 192.168.50.10 para 1 hosts, 10 portas diferentes em 0m0s","src":"192.168.50.10","actions":["Notice::ACTION_LOG"],"email_dest":[],"suppress_for":3600.0}
+{"ts":1752201695.580092,"note":"PortScan::Port_Scan","msg":"Port scan detectado de 192.168.50.10 para 1 hosts, 3 portas diferentes em 0m0s","src":"192.168.50.10","actions":["Notice::ACTION_LOG"],"email_dest":[],"suppress_for":3600.0}
+{"ts":1752201695.580092,"note":"PortScan::Closed_Port_Access","msg":"Múltiplas tentativas em portas fechadas de 192.168.50.10 (3 tentativas)","src":"192.168.50.10","actions":["Notice::ACTION_LOG"],"email_dest":[],"suppress_for":3600.0}
