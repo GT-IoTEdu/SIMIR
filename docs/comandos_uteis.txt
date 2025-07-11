@@ -1,0 +1,34 @@
+- Comando para rodar o docker:
+docker compose up -d
+
+- Comando para parar o docker, fazer um novo build e iniciar o docker
+docker compose down --volumes --remove-orphans && docker compose build --no-cache && docker compose up -d
+
+- Comando para acessar o container:
+docker exec -it SIMIR_Z sh
+ou
+docker run -it --rm --entrypoint sh zeek-docker-zeek:latest
+
+- Deletar todas imagens docker:
+docker image prune -a
+
+- Parar container docker
+docker compose down --remove-orphans
+
+- Ver logs de conexão em tempo real:
+tail -f logs/current/conn.log
+
+- Checar scripts zeel:
+zeekctl check
+
+- Diagnostico zeek:
+zeekctl diag
+
+- Deploy zeek:
+zeekctl deploy
+
+- Enviar email de teste:
+echo "Alerta de teste do Zeek" | mail -s "Teste Zeek" rafaelbartorres@gmail.com
+
+- Ver logs do containter zeek:
+docker logs SIMIR_Z
