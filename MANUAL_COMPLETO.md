@@ -1,4 +1,4 @@
-# Manual Completo do Sistema SIMIR
+# Manual Completo da Sonda SIMIR
 
 ## 📋 Índice
 1. [Visão Geral](#visão-geral)
