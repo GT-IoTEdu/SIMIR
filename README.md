@@ -1,10 +1,6 @@
 # SIMIR
 SIMIR - Sonda Inteligente de Monitoramento Interno da Rede
 
-## 🚀 Sistema de Monitoramento de Port Scan com Alertas por Email
-
-O SIMIR agora inclui um sistema avançado de detecção de port scan que envia alertas automáticos por email para **rafaelbartorres@gmail.com** quando atividades suspeitas são detectadas.
-
 ### ⚡ Inicialização Rápida
 
 ```bash
