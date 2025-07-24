@@ -1,8 +1,4 @@
-# SIMIR - Sistema Implementado ✅
-
-## 📋 Resumo da Implementação
-
-Foi implementado com sucesso um **sistema completo de monitoramento de port scan** no SIMIR, que detecta automaticamente tentativas de port scan e envia alertas por email para **rafaelbartorres@gmail.com**.
+# SIMIR - Sonda Inteligênte de Monitoramento Interno da Rede
 
 ## 🎯 Funcionalidades Implementadas
 
