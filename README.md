@@ -1,5 +1,5 @@
-# SIMIR
-SIMIR - Sonda Inteligente de Monitoramento Interno da Rede
+# SIMIR - Sonda Inteligente de Monitoramento Interno da Rede
+Sonda integrante do projeto GT-IoTEdu
 
 ### ⚡ Inicialização Rápida
 
