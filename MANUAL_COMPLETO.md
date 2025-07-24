@@ -16,7 +16,7 @@
 
 ## 🎯 Visão Geral
 
-O **SIMIR** (Sonda Inteligente de Monitoramento Interno da Rede) é um sistema completo de monitoramento de rede baseado no **Zeek** (anteriormente conhecido como Bro), com funcionalidades avançadas de detecção de port scan e sistema de alertas por email.
+A **SIMIR** (Sonda Inteligente de Monitoramento Interno da Rede) é um sistema completo de monitoramento de rede baseado no **Zeek** (anteriormente conhecido como Bro), com funcionalidades avançadas de detecção de port scan e sistema de alertas por email.
 
 ### Características Principais:
 - 🔍 **Monitoramento passivo** de tráfego de rede
@@ -89,13 +89,13 @@ Scripts Zeek (em linguagem própria) definem:
 
 ---
 
-## ⚙️ Como o SIMIR Funciona
+## ⚙️ Como a SIMIR Funciona
 
 ### Arquitetura do Sistema
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Tráfego de    │    │      Zeek        │    │     Monitor     │
+│   Tráfego de    │    │      Zeek        │    │     Sonda     │
 │     Rede        │───▶│   Container      │───▶│     SIMIR       │
 │                 │    │                  │    │                 │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
@@ -112,11 +112,11 @@ Scripts Zeek (em linguagem própria) definem:
 1. **Captura**: Zeek monitora interface de rede
 2. **Análise**: Scripts personalizados detectam padrões
 3. **Logging**: Eventos são registrados em logs
-4. **Monitoramento**: SIMIR monitor lê logs continuamente
+4. **Monitoramento**: Sonda SIMIR lê logs continuamente
 5. **Detecção**: Algoritmos identificam port scans
 6. **Alerta**: Emails são enviados automaticamente
 
-### Componentes do SIMIR
+### Componentes da SIMIR
 
 #### **Container Zeek**
 - Engine principal de monitoramento
@@ -234,7 +234,7 @@ docker-compose logs -f
    - Selecione "Mail" e digite "SIMIR"
    - Copie a senha de 16 caracteres
 
-3. **Configurar no SIMIR**
+3. **Configurar na SIMIR**
    ```bash
    ./scripts/config-email.sh
    ```
@@ -376,7 +376,7 @@ docker exec SIMIR_Z ls -la /usr/local/zeek/spool/zeek/
 - `helo`: Identificação HELO/EHLO
 
 #### 8. **notice.log** - Alertas e Notices ⭐
-**Descrição**: **LOG MAIS IMPORTANTE PARA O SIMIR**. Contém alertas gerados por scripts Zeek, incluindo detecções de port scan.
+**Descrição**: **LOG MAIS IMPORTANTE PARA A SIMIR**. Contém alertas gerados por scripts Zeek, incluindo detecções de port scan.
 
 **Campos Principais**:
 - `note`: Tipo de alerta
@@ -436,7 +436,7 @@ Formato padrão mais antigo:
 ```
 
 #### **JSON**
-Formato moderno configurado no SIMIR:
+Formato moderno configurado na SIMIR:
 ```json
 {
   "ts": 1641895234.123456,
@@ -692,7 +692,7 @@ Alertas Recentes:
 
 #### **Logs de Monitoramento**
 ```bash
-# Logs do monitor SIMIR
+# Logs da Sonda SIMIR
 tail -f /tmp/simir_monitor.log
 
 # Logs específicos de alertas
@@ -863,7 +863,7 @@ server.quit()
 "
 ```
 
-#### 4. **Monitor SIMIR Não Inicia**
+#### 4. **Sonda SIMIR Não Inicia**
 
 **Sintomas**:
 ```bash
@@ -1051,7 +1051,7 @@ tail -20 /tmp/simir_monitor.log
 - ✅ Logs sendo gerados (`conn.log`, `dns.log`, `http.log`)
 - ✅ **notice.log existe e contém alertas**
 - ✅ Scripts personalizados carregados
-- ✅ Monitor SIMIR processando logs
+- ✅ Sonda SIMIR processando logs
 - ✅ Emails funcionando (se configurado)
 
 ---
@@ -1122,7 +1122,7 @@ index=zeek sourcetype=zeek:notice note="PortScan::Port_Scan"
 ## 📚 Referências
 
 1. **Documentação Oficial do Zeek**: [zeek.org/docs](https://zeek.org/docs/)
-2. **Repositório do SIMIR**: [github.com/seu_usuario/simir](https://github.com/seu_usuario/simir)
+2. **Repositório da SIMIR**: https://github.com/GT-IoTEdu/SIMIR
 3. **Tutoriais e Artigos**:
    - [Introdução ao Zeek](https://zeek.org/getting-started/)
    - [Monitoramento de Rede com SIMIR](https://medium.com/@seu_usuario/monitoramento-de-rede-com-simir-123456789abc)
