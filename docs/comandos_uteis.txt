@@ -27,6 +27,9 @@ zeekctl diag
 - Deploy zeek:
 zeekctl deploy
 
+- Ver a data e hora do timestamp do log:
+date -d @1754607975
+
 - Enviar email de teste:
 echo "Alerta de teste do Zeek" | mail -s "Teste Zeek" rafaelbartorres@gmail.com
 
