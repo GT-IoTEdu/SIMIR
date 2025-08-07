@@ -505,6 +505,7 @@
 {"name":"  /usr/local/zeek/share/zeek/builtin-plugins/Zeek_JavaScript/__load__.zeek"}
 {"name":"/usr/local/zeek/spool/installed-scripts-do-not-touch/site/local.zeek"}
 {"name":"  /usr/local/zeek/spool/installed-scripts-do-not-touch/site/port-scan-detector.zeek"}
+{"name":"  /usr/local/zeek/spool/installed-scripts-do-not-touch/site/brute-force-detector.zeek"}
 {"name":"/usr/local/zeek/share/zeek/zeekctl/__load__.zeek"}
 {"name":"  /usr/local/zeek/share/zeek/zeekctl/main.zeek"}
 {"name":"    /usr/local/zeek/share/zeek/policy/misc/loaded-scripts.zeek"}

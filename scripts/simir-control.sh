@@ -398,6 +398,50 @@ simulate_port_scan() {
     log_info "  tail -f /tmp/simir_monitor.log"
 }
 
+# Testar detector de força bruta
+test_brute_force() {
+    log_info "Testando detector de força bruta..."
+    
+    if [ ! -f "$SCRIPT_DIR/test-brute-force.sh" ]; then
+        log_error "Script de teste de força bruta não encontrado"
+        return 1
+    fi
+    
+    echo "Escolha o tipo de teste:"
+    echo "1) Teste de simulação (recomendado)"
+    echo "2) Monitoramento em tempo real"
+    echo "3) Verificar apenas configuração"
+    echo "4) Verificar apenas sintaxe"
+    
+    read -p "Opção: " test_type
+    
+    case "$test_type" in
+        1)
+            log_info "Executando teste de simulação..."
+            "$SCRIPT_DIR/test-brute-force.sh" --test
+            ;;
+        2)
+            log_info "Iniciando monitoramento em tempo real..."
+            "$SCRIPT_DIR/test-brute-force.sh" --live
+            ;;
+        3)
+            log_info "Verificando configuração..."
+            "$SCRIPT_DIR/test-brute-force.sh" --config
+            ;;
+        4)
+            log_info "Verificando sintaxe..."
+            "$SCRIPT_DIR/test-brute-force.sh" --syntax
+            ;;
+        *)
+            log_error "Opção inválida"
+            return 1
+            ;;
+    esac
+    
+    log_success "Teste de força bruta concluído"
+    log_info "Verifique os logs com 'Ver logs > alerts'"
+}
+
 # Visualizar logs
 view_logs() {
     local log_type="$1"
@@ -442,7 +486,8 @@ show_menu() {
     echo "  6) Parar monitor de port scan"
     echo "  7) Ver status do sistema"
     echo "  8) Simular port scan (teste)"
-    echo "  9) Ver logs (monitor/zeek/alerts)"
+    echo "  9) Testar detector de força bruta"
+    echo "  10) Ver logs (monitor/zeek/alerts)"
     echo "  0) Sair"
     echo
     read -p "Opção: " option
@@ -456,7 +501,8 @@ show_menu() {
         6) stop_monitor ;;
         7) show_status ;;
         8) simulate_port_scan ;;
-        9) 
+        9) test_brute_force ;;
+        10) 
             echo
             read -p "Tipo de log (monitor/zeek/alerts): " log_type
             view_logs "$log_type"
@@ -489,6 +535,7 @@ main() {
             "stop-monitor") stop_monitor ;;
             "status") show_status ;;
             "simulate") simulate_port_scan ;;
+            "test-brute") test_brute_force ;;
             "logs") view_logs "$2" ;;
             "start") 
                 start_zeek
@@ -511,6 +558,7 @@ main() {
                 echo "  stop          - Parar tudo"
                 echo "  status        - Ver status"
                 echo "  simulate      - Simular port scan"
+                echo "  test-brute    - Testar força bruta"
                 echo "  logs [tipo]   - Ver logs"
                 ;;
         esac

@@ -4,8 +4,9 @@
 @load base/protocols/http
 @load base/frameworks/notice
 
-# Carrega detector de port scan personalizado
+# Carrega detectores personalizados
 @load ./port-scan-detector.zeek
+@load ./brute-force-detector.zeek
 
 # Configurações de logging
 redef LogAscii::use_json = T;
