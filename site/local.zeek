@@ -7,6 +7,7 @@
 # Carrega detectores personalizados
 @load ./port-scan-detector.zeek
 @load ./brute-force-detector.zeek
+@load ./intelligence-framework.zeek
 
 # Configurações de logging
 redef LogAscii::use_json = T;

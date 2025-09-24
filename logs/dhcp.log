@@ -1,3 +1,0 @@
-{"ts":1754598860.69901,"uids":["CVr8Qqf3zNPjT4Ps6"],"mac":"f8:fc:e1:85:4f:5f","requested_addr":"192.168.0.8","msg_types":["DISCOVER","REQUEST"],"duration":1.1266050338745117}
-{"ts":1754598875.129002,"uids":["CVr8Qqf3zNPjT4Ps6"],"mac":"74:e2:0c:ea:94:14","requested_addr":"192.168.0.38","msg_types":["DISCOVER","REQUEST"],"duration":1.0214879512786865}
-{"ts":1754599270.405324,"uids":["CjxBYq4OFRVMMfisoa"],"client_addr":"192.168.0.18","server_addr":"192.168.0.1","mac":"18:31:bf:d5:2e:b9","domain":"home","assigned_addr":"192.168.0.18","lease_time":3600.0,"msg_types":["ACK"],"duration":0.0}

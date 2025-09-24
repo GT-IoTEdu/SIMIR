@@ -35,3 +35,16 @@ echo "Alerta de teste do Zeek" | mail -s "Teste Zeek" rafaelbartorres@gmail.com
 
 - Ver logs do containter zeek:
 docker logs SIMIR_Z
+
+- Testar Intelligence Framework:
+./scripts/test-intelligence.sh
+
+- Atualizar feeds de inteligência:
+./scripts/update-intel-feeds.sh
+
+- Ver logs de inteligência em tempo real:
+tail -f logs/current/intelligence.log
+tail -f logs/notice_PortScan_BruteForce.log | grep -i "intel\|malicious"
+
+- Verificar feeds de inteligência carregados:
+docker exec SIMIR_Z zeek -e "print Intel::read_files;"

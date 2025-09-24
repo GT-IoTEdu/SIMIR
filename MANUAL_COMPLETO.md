@@ -8,10 +8,11 @@
 5. [Arquivos de Log do Zeek](#arquivos-de-log-do-zeek)
 6. [Sistema de Detecção de Port Scan](#sistema-de-detecção-de-port-scan)
 7. [Sistema de Detecção de Força Bruta](#sistema-de-detecção-de-força-bruta)
-8. [Gerenciamento do Sistema](#gerenciamento-do-sistema)
-9. [Troubleshooting](#troubleshooting)
-10. [Monitoramento Avançado](#monitoramento-avançado)
-11. [Referências](#referências)
+8. [Intelligence Framework](#intelligence-framework)
+9. [Gerenciamento do Sistema](#gerenciamento-do-sistema)
+10. [Troubleshooting](#troubleshooting)
+11. [Monitoramento Avançado](#monitoramento-avançado)
+12. [Referências](#referências)
 
 ---
 
@@ -835,6 +836,210 @@ docker exec SIMIR_Z tail -10 /usr/local/zeek/logs/current/notice.log
 
 ---
 
+## 🧠 Intelligence Framework
+
+### O que é o Intelligence Framework
+
+O **Intelligence Framework** do Zeek é um sistema avançado que permite usar **feeds de inteligência de ameaças** (IOCs - Indicators of Compromise) para detectar automaticamente atividades maliciosas conhecidas. Este sistema compara o tráfego de rede observado contra bases de dados de indicadores maliciosos.
+
+### Como Funciona
+
+O framework monitora continuamente:
+- **IPs maliciosos** em conexões de rede
+- **Domínios maliciosos** em consultas DNS
+- **URLs maliciosas** em requisições HTTP
+- **Hashes de arquivos** maliciosos
+- **Outros indicadores** personalizados
+
+```
+[Tráfego de Rede] → [Intelligence Framework] → [Comparação com IOCs] → [Alertas]
+```
+
+### Arquitetura do Sistema
+
+#### **Componentes Principais**
+1. **intelligence-framework.zeek**: Script principal de detecção
+2. **Feeds de IOCs**: Bases de dados de indicadores maliciosos
+3. **Sistema de alertas**: Notificações quando IOCs são encontrados
+4. **Logs de inteligência**: Registro detalhado das detecções
+
+#### **Tipos de IOCs Suportados**
+- `Intel::ADDR`: Endereços IP maliciosos
+- `Intel::DOMAIN`: Domínios maliciosos
+- `Intel::URL`: URLs maliciosas
+- `Intel::FILE_HASH`: Hashes de arquivos maliciosos
+- `Intel::EMAIL`: Endereços de email maliciosos
+- `Intel::USER_NAME`: Nomes de usuário suspeitos
+
+### Configuração e Feeds
+
+#### **Estrutura de Feeds**
+```bash
+site/intel/
+├── malicious-ips.txt      # IPs maliciosos
+├── malicious-domains.txt  # Domínios maliciosos
+├── malicious-urls.txt     # URLs maliciosas
+└── backup/                # Backups automáticos
+```
+
+#### **Formato dos Feeds**
+```bash
+# Exemplo: malicious-ips.txt
+#fields	indicator	indicator_type	meta.source	meta.desc
+185.220.100.240	Intel::ADDR	TorProject	Tor exit node
+192.168.100.100	Intel::ADDR	Internal	IP suspeito interno
+```
+
+### Detecções e Alertas
+
+#### **Tipos de Alertas**
+- **Intelligence::Intel_Hit**: Indicador genérico detectado
+- **Intelligence::Malicious_IP**: IP malicioso identificado
+- **Intelligence::Malicious_Domain**: Domínio malicioso acessado
+- **Intelligence::Malicious_URL**: URL maliciosa acessada
+- **Intelligence::Malicious_Hash**: Hash malicioso encontrado
+
+#### **Exemplo de Alerta**
+```json
+{
+  "ts": 1754608200.123456,
+  "note": "Intelligence::Malicious_IP",
+  "msg": "IP malicioso detectado: 185.220.100.240 (Fonte: TorProject) - Tor exit node",
+  "src": "192.168.1.100",
+  "actions": ["Notice::ACTION_LOG"],
+  "suppress_for": 3600.0
+}
+```
+
+### Uso e Operação
+
+#### **Teste do Sistema**
+```bash
+# Teste automatizado
+./scripts/simir-control.sh
+# Escolher opção: "10) Testar Intelligence Framework"
+
+# Ou comando direto
+./scripts/test-intelligence.sh
+```
+
+#### **Atualização de Feeds**
+```bash
+# Via interface
+./scripts/simir-control.sh
+# Escolher opção: "11) Atualizar feeds de inteligência"
+
+# Ou comando direto
+./scripts/update-intel-feeds.sh
+```
+
+#### **Visualização de Logs**
+```bash
+# Via interface
+./scripts/simir-control.sh
+# Escolher opção: "12) Ver logs > intel"
+
+# Comandos diretos
+tail -f logs/notice_PortScan_BruteForce.log | grep -i "intel\|malicious"
+tail -f logs/current/intelligence.log
+docker exec SIMIR_Z tail -f /usr/local/zeek/logs/current/intel.log
+```
+
+### Integração com Feeds Externos
+
+#### **Feeds Públicos Recomendados**
+- **Abuse.ch**: Feodo Tracker, URLhaus
+- **Malware Domain List**: Domínios maliciosos
+- **Tor Project**: Exit nodes
+- **Threat Intelligence Platforms**: Commercial feeds
+
+#### **Automação de Updates**
+```bash
+# Configurar cron para atualizações automáticas
+crontab -e
+
+# Atualizar feeds a cada 6 horas
+0 */6 * * * /home/rafael/SIMIR/scripts/update-intel-feeds.sh >/dev/null 2>&1
+```
+
+### Personalização
+
+#### **Adicionando Feeds Customizados**
+```bash
+# Criar novo feed
+echo "#fields	indicator	indicator_type	meta.source	meta.desc" > site/intel/custom-feed.txt
+echo "evil.domain.com	Intel::DOMAIN	Custom	Domínio interno malicioso" >> site/intel/custom-feed.txt
+
+# Atualizar configuração em intelligence-framework.zeek
+nano site/intelligence-framework.zeek
+# Adicionar linha: "/usr/local/zeek/share/zeek/site/intel/custom-feed.txt"
+```
+
+#### **Configuração de Thresholds**
+```zeek
+# Em intelligence-framework.zeek
+const intel_suppress_time = 1800.0 &redef;  # 30 minutos
+const enable_intel_logging = T &redef;
+```
+
+### Monitoramento e Métricas
+
+#### **Comandos de Verificação**
+```bash
+# Verificar feeds carregados
+docker exec SIMIR_Z zeek -e "print Intel::read_files;"
+
+# Estatísticas de inteligência
+docker exec SIMIR_Z grep -c "Intel::" /usr/local/zeek/logs/current/intel.log
+
+# Status do framework
+docker exec SIMIR_Z zeekctl diag | grep -i intel
+```
+
+#### **Análise de Performance**
+```bash
+# Contar IOCs por tipo
+grep "Intel::" logs/notice_PortScan_BruteForce.log | \
+  jq -r '.note' | sort | uniq -c | sort -nr
+
+# Top IPs maliciosos detectados
+grep "Malicious_IP" logs/notice_PortScan_BruteForce.log | \
+  jq -r '.src' | sort | uniq -c | sort -nr | head -10
+```
+
+### Troubleshooting
+
+#### **Framework Não Carrega**
+```bash
+# Verificar sintaxe dos scripts
+docker exec SIMIR_Z zeek -g site/intelligence-framework.zeek
+
+# Verificar logs de erro
+docker exec SIMIR_Z tail /usr/local/zeek/logs/current/stderr.log
+```
+
+#### **Feeds Não São Carregados**
+```bash
+# Verificar formato dos feeds
+head -5 site/intel/malicious-ips.txt
+
+# Verificar permissões
+ls -la site/intel/
+
+# Recriar índices
+docker exec SIMIR_Z zeekctl install
+docker exec SIMIR_Z zeekctl restart
+```
+
+#### **Muitos Falsos Positivos**
+```bash
+# Filtrar IPs locais/conhecidos
+# Adicionar whitelist no intelligence-framework.zeek
+const intel_whitelist_subnets = { 192.168.0.0/16, 10.0.0.0/8 } &redef;
+```
+
+---
+
 ## 🎛️ Gerenciamento do Sistema
 
 ### Scripts de Controle
@@ -1464,4 +1669,4 @@ index=zeek sourcetype=zeek:notice note="PortScan::Port_Scan"
 
 **Nota**: Este é um documento vivo e pode ser atualizado com novas informações, tutoriais e referências. O sistema SIMIR agora inclui detecção avançada de ataques de força bruta além da detecção de port scan. Contribuições são bem-vindas!
 
-**Última atualização**: Agosto 2025 - Adicionado Sistema de Detecção de Força Bruta
+**Última atualização**: Setembro 2025 - Adicionado Intelligence Framework

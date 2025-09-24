@@ -442,6 +442,79 @@ test_brute_force() {
     log_info "Verifique os logs com 'Ver logs > alerts'"
 }
 
+# Testar Intelligence Framework
+test_intelligence_framework() {
+    log_info "Testando Intelligence Framework..."
+    
+    if [ ! -f "$SCRIPT_DIR/test-intelligence.sh" ]; then
+        log_error "Script de teste do Intelligence Framework não encontrado"
+        return 1
+    fi
+    
+    echo "O teste irá simular atividades maliciosas usando os feeds de inteligência."
+    read -p "Continuar? (s/N): " confirm
+    
+    if [[ "$confirm" =~ ^[Ss]$ ]]; then
+        log_info "Executando teste do Intelligence Framework..."
+        "$SCRIPT_DIR/test-intelligence.sh"
+        log_success "Teste do Intelligence Framework concluído"
+        log_info "Verifique os logs com 'Ver logs > intel' ou 'Ver logs > alerts'"
+    else
+        log_info "Teste cancelado"
+    fi
+}
+
+# Atualizar feeds de inteligência
+update_intel_feeds() {
+    log_info "Atualizando feeds de inteligência..."
+    
+    echo "Escolha o tipo de atualização:"
+    echo "1) Feeds básicos (exemplos internos)"
+    echo "2) Feeds públicos completos (Abuse.ch, Spamhaus, etc.)"
+    echo "3) Apenas Abuse.ch (recomendado para início)"
+    
+    read -p "Opção: " feed_type
+    
+    case "$feed_type" in
+        1)
+            if [ ! -f "$SCRIPT_DIR/update-intel-feeds.sh" ]; then
+                log_error "Script de atualização básica não encontrado"
+                return 1
+            fi
+            log_info "Atualizando feeds básicos..."
+            "$SCRIPT_DIR/update-intel-feeds.sh"
+            ;;
+        2)
+            if [ ! -f "$SCRIPT_DIR/update-threat-feeds.sh" ]; then
+                log_error "Script de feeds completos não encontrado"
+                return 1
+            fi
+            echo "Isso baixará feeds de várias fontes públicas e pode demorar alguns minutos."
+            read -p "Continuar? (s/N): " confirm
+            if [[ "$confirm" =~ ^[Ss]$ ]]; then
+                log_info "Baixando feeds públicos completos..."
+                "$SCRIPT_DIR/update-threat-feeds.sh"
+            else
+                log_info "Atualização cancelada"
+            fi
+            ;;
+        3)
+            if [ ! -f "$SCRIPT_DIR/import-abusech-feeds.sh" ]; then
+                log_error "Script Abuse.ch não encontrado"
+                return 1
+            fi
+            log_info "Baixando feeds do Abuse.ch..."
+            "$SCRIPT_DIR/import-abusech-feeds.sh"
+            ;;
+        *)
+            log_error "Opção inválida"
+            return 1
+            ;;
+    esac
+    
+    log_success "Atualização de feeds concluída"
+}
+
 # Visualizar logs
 view_logs() {
     local log_type="$1"
@@ -465,11 +538,39 @@ view_logs() {
                 log_error "Log de alertas não encontrado"
             fi
             ;;
+        "intel")
+            log_info "Visualizando logs de inteligência..."
+            echo "Logs de inteligência disponíveis:"
+            
+            # Log principal de notices (inclui intel)
+            if [ -f "$PROJECT_ROOT/logs/notice_PortScan_BruteForce.log" ]; then
+                echo "=== Alertas de Inteligência (últimas 20 entradas) ==="
+                grep -i "intel\|malicious\|intelligence" "$PROJECT_ROOT/logs/notice_PortScan_BruteForce.log" | tail -20
+            fi
+            
+            # Log específico de inteligência (se existir)
+            if [ -f "$PROJECT_ROOT/logs/current/intelligence.log" ]; then
+                echo -e "\n=== Log de Inteligência Detalhado ==="
+                tail -20 "$PROJECT_ROOT/logs/current/intelligence.log"
+            fi
+            
+            # Intel log do Zeek
+            if docker exec SIMIR_Z test -f /usr/local/zeek/logs/current/intel.log 2>/dev/null; then
+                echo -e "\n=== Intel Log (Zeek) ==="
+                docker exec SIMIR_Z tail -20 /usr/local/zeek/logs/current/intel.log 2>/dev/null || true
+            fi
+            
+            if [ ! -f "$PROJECT_ROOT/logs/notice_PortScan_BruteForce.log" ] && \
+               [ ! -f "$PROJECT_ROOT/logs/current/intelligence.log" ]; then
+                log_warn "Nenhum log de inteligência encontrado. Execute o teste do Intelligence Framework."
+            fi
+            ;;
         *)
             echo "Tipos de log disponíveis:"
             echo "  monitor - Logs do monitor SIMIR"
             echo "  zeek    - Logs do container Zeek"
             echo "  alerts  - Apenas alertas"
+            echo "  intel   - Logs de inteligência/IOCs"
             ;;
     esac
 }
@@ -487,7 +588,9 @@ show_menu() {
     echo "  7) Ver status do sistema"
     echo "  8) Simular port scan (teste)"
     echo "  9) Testar detector de força bruta"
-    echo "  10) Ver logs (monitor/zeek/alerts)"
+    echo "  10) Testar Intelligence Framework"
+    echo "  11) Atualizar feeds de inteligência"
+    echo "  12) Ver logs (monitor/zeek/alerts/intel)"
     echo "  0) Sair"
     echo
     read -p "Opção: " option
@@ -502,9 +605,11 @@ show_menu() {
         7) show_status ;;
         8) simulate_port_scan ;;
         9) test_brute_force ;;
-        10) 
+        10) test_intelligence_framework ;;
+        11) update_intel_feeds ;;
+        12) 
             echo
-            read -p "Tipo de log (monitor/zeek/alerts): " log_type
+            read -p "Tipo de log (monitor/zeek/alerts/intel): " log_type
             view_logs "$log_type"
             ;;
         0) 
