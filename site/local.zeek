@@ -4,6 +4,10 @@
 @load base/protocols/http
 @load base/frameworks/notice
 
+# CORREÇÃO CRÍTICA: Ignora checksums inválidos devido a checksum offloading
+# Resolve problema onde Zeek descarta pacotes com checksums incorretos
+redef ignore_checksums = T;
+
 # Carrega detectores personalizados
 @load ./port-scan-detector.zeek
 @load ./brute-force-detector.zeek

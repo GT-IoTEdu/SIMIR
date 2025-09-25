@@ -20,3 +20,17 @@ http://data.phishtank.com/data/online-valid.csv
 # DROP list (IPs para bloquear)
 https://www.spamhaus.org/drop/drop.txt
 https://www.spamhaus.org/drop/edrop.txt
+
+# Suricata Rules (IOCs extraídos de regras)
+https://rules.emergingthreats.net/open/suricata/rules/emerging-compromised.rules
+https://rules.emergingthreats.net/open/suricata/rules/emerging-botcc.rules
+https://rules.emergingthreats.net/open/suricata/rules/emerging-malware.rules
+https://rules.emergingthreats.net/open/suricata/rules/emerging-trojan.rules
+
+# Suricata ET Intelligence
+https://rules.emergingthreats.net/open/suricata/rules/emerging-ciarmy.rules
+https://rules.emergingthreats.net/open/suricata/rules/emerging-tor.rules
+https://rules.emergingthreats.net/open/suricata/rules/emerging-dshield.rules
+
+# Suricata Community Rules (IOCs)  
+https://www.openinfosecfoundation.org/rules/index.yaml

@@ -1,0 +1,2 @@
+{"ts":1758764852.239549,"note":"PortScan::Closed_Port_Access","msg":"Múltiplas tentativas em portas fechadas de 2804:14d:ba6b:1000::1 (8 tentativas)","src":"2804:14d:ba6b:1000::1","actions":["Notice::ACTION_LOG"],"email_dest":[],"suppress_for":3600.0}
+{"ts":1758764852.240285,"note":"PortScan::Closed_Port_Access","msg":"Múltiplas tentativas em portas fechadas de fe80::d6c1:c8ff:fe1c:ea4f (8 tentativas)","src":"fe80::d6c1:c8ff:fe1c:ea4f","actions":["Notice::ACTION_LOG"],"email_dest":[],"suppress_for":3600.0}

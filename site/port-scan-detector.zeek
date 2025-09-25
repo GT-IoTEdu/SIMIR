@@ -17,10 +17,11 @@ export {
         Closed_Port_Access
     };
 
-    # Configurações
-    global port_scan_threshold = 3;   # Número de portas diferentes para considerar port scan (reduzido para teste)
-    global time_window = 5min;        # Janela de tempo para análise
-    global closed_port_threshold = 3;  # Tentativas em portas fechadas (reduzido para teste)
+    # Configurações ajustadas para reduzir falsos positivos
+    global port_scan_threshold = 15;    # Número de portas diferentes (aumentado)
+    global time_window = 10min;         # Janela de tempo mais longa
+    global closed_port_threshold = 8;   # Mais tentativas para alertar
+    global host_threshold = 5;          # Mínimo de hosts para scan vertical
 }
 
 # Estrutura para rastrear tentativas de conexão
@@ -36,6 +37,22 @@ type scan_tracker: record {
 global scanners: table[addr] of scan_tracker &create_expire=time_window;
 global targets: table[addr] of scan_tracker &create_expire=time_window;
 
+# Whitelist de IPs legítimos (evita falsos positivos)
+global whitelist_ips: set[addr] = {
+    127.0.0.1,      # Localhost IPv4
+    [::1],          # Localhost IPv6 
+    192.168.0.1,    # Gateway típico
+    192.168.1.1,    # Gateway típico
+    10.0.0.1,       # Gateway típico
+} &redef;
+
+# Subnets para ignorar (redes locais comuns)
+global ignore_subnets: set[subnet] = {
+    224.0.0.0/4,    # Multicast
+    169.254.0.0/16, # Link-local
+    255.255.255.255/32, # Broadcast
+} &redef;
+
 # Função para detectar port scan baseado em conexões
 event connection_state_remove(c: connection)
 {
@@ -45,6 +62,14 @@ event connection_state_remove(c: connection)
     
     # Ignora tráfego local (mesmo host)
     if (orig == dest)
+        return;
+        
+    # Ignora IPs na whitelist
+    if (orig in whitelist_ips || dest in whitelist_ips)
+        return;
+        
+    # Ignora subnets multicast e broadcast
+    if (orig in ignore_subnets || dest in ignore_subnets)
         return;
     
     # Ignora endereços privados fazendo conexões para a internet

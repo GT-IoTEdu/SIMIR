@@ -1,0 +1,2 @@
+#fields	indicator	indicator_type	meta.source	meta.desc
+8.8.8.8	Intel::ADDR	TEST	IP de teste Google DNS

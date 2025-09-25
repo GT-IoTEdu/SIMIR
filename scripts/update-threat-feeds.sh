@@ -74,6 +74,60 @@ process_spamhaus_drop() {
     done
 }
 
+# Função para extrair IOCs das regras do Suricata
+extract_suricata_iocs() {
+    local input="$1"
+    local output="$2"
+    local rule_type="$3"
+
+    echo "#fields	indicator	indicator_type	meta.source	meta.desc" > "$output"
+    
+    # Extrair IPs das regras
+    grep -oP '(?<=[\s\[])[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(?=[\s\]/])' "$input" | sort -u | while read -r ip; do
+        # Filtrar IPs privados e inválidos
+        if [[ ! "$ip" =~ ^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|0\.|255\.) ]]; then
+            echo -e "$ip\tIntel::ADDR\tSuricata-$rule_type\tIP extraído de regras Suricata $rule_type" >> "$output"
+        fi
+    done
+    
+    # Extrair domínios das regras
+    grep -oP '(?<=[\s";\[])[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.([a-zA-Z]{2,}|[a-zA-Z]{2,}\.[a-zA-Z]{2,})(?=[\s";/\]])' "$input" | \
+    grep -E '\.(com|org|net|edu|gov|mil|int|co\.|ru|cn|de|uk|fr|it|es|pl|nl|br|au|ca|jp|kr|in|mx|tw|tr|se|ch|be|dk|no|fi|at|cz|pt|gr|il|za|my|th|sg|ph|vn|id|eg|ar|cl|pe|ve|ec|uy|py|bo|gq|tk|ml|ga|cf|ly|sy|iq|af|pk|bd|lk|mm|kh|la|mn|bt|np|mv|fj|to|ws|tv|nu|ck|pw|vu|sb|ki|nr|mh|fm|as|gu|vi|pr|um)$' | \
+    sort -u | while read -r domain; do
+        if [[ "$domain" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+            echo -e "$domain\tIntel::DOMAIN\tSuricata-$rule_type\tDomínio extraído de regras Suricata $rule_type" >> "$output"
+        fi
+    done
+}
+
+# Função para processar regras de botnet e malware do Suricata
+process_suricata_rules() {
+    local input="$1"
+    local output="$2"
+    local rule_name="$3"
+    
+    echo "#fields	indicator	indicator_type	meta.source	meta.desc" > "$output"
+    local total_indicators=0
+    
+    # Extrair referências a IPs maliciosos das mensagens das regras
+    grep -oP 'msg:"[^"]*"' "$input" | grep -iE '(botnet|malware|trojan|c2|c&c|command)' | \
+    grep -oP '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort -u | while read -r ip; do
+        if [[ ! "$ip" =~ ^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|0\.|255\.) ]]; then
+            echo -e "$ip\tIntel::ADDR\tSuricata-$rule_name\tIP de $rule_name detectado via regras Suricata" >> "$output"
+            ((total_indicators++))
+        fi
+    done
+    
+    # Extrair domínios de C&C das regras
+    grep -oP 'content:"[^"]*"' "$input" | grep -oE '[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}' | \
+    sort -u | while read -r domain; do
+        if [[ "$domain" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] && [[ ! "$domain" =~ \.(example|test|localhost|local)$ ]]; then
+            echo -e "$domain\tIntel::DOMAIN\tSuricata-$rule_name\tDomínio de $rule_name detectado via regras Suricata" >> "$output"
+            ((total_indicators++))
+        fi
+    done
+}
+
 check_docker_permissions() {
     if docker ps >/dev/null 2>&1; then
         return 0
@@ -200,6 +254,88 @@ else
 fi
 
 # ========================================================================
+# Feeds do Suricata - Emerging Threats
+# ========================================================================
+
+echo ""
+echo "🛡️ Baixando regras do Suricata para extração de IOCs..."
+
+# 6. Suricata - Botnet C&C Rules
+echo "  🤖 Emerging Threats - Botnet C&C..."
+if curl -s --connect-timeout 30 --max-time 60 \
+    "https://rules.emergingthreats.net/open/suricata/rules/emerging-botcc.rules" \
+    -o "$TEMP_DIR/et_botcc.rules"; then
+    if [ -s "$TEMP_DIR/et_botcc.rules" ]; then
+        process_suricata_rules "$TEMP_DIR/et_botcc.rules" "$INTEL_DIR/suricata-botcc.txt" "Botnet-CC"
+        count=$(grep -v "^#" "$INTEL_DIR/suricata-botcc.txt" | wc -l)
+        if [ "$count" -gt 0 ]; then
+            total_ips=$((total_ips + $(grep "Intel::ADDR" "$INTEL_DIR/suricata-botcc.txt" | wc -l)))
+            total_domains=$((total_domains + $(grep "Intel::DOMAIN" "$INTEL_DIR/suricata-botcc.txt" | wc -l)))
+            feeds_success=$((feeds_success + 1))
+            echo "    ✅ $count IOCs extraídos das regras de Botnet C&C"
+        else
+            echo "    ⚠️  Nenhum IOC extraído das regras de Botnet C&C"
+        fi
+    else
+        feeds_failed=$((feeds_failed + 1))
+        echo "    ❌ Arquivo de regras vazio"
+    fi
+else
+    feeds_failed=$((feeds_failed + 1))
+    echo "    ❌ Falha no download das regras de Botnet C&C"
+fi
+
+# 7. Suricata - Compromised IPs
+echo "  💀 Emerging Threats - Compromised IPs..."
+if curl -s --connect-timeout 30 --max-time 60 \
+    "https://rules.emergingthreats.net/open/suricata/rules/emerging-compromised.rules" \
+    -o "$TEMP_DIR/et_compromised.rules"; then
+    if [ -s "$TEMP_DIR/et_compromised.rules" ]; then
+        extract_suricata_iocs "$TEMP_DIR/et_compromised.rules" "$INTEL_DIR/suricata-compromised.txt" "Compromised"
+        count=$(grep -v "^#" "$INTEL_DIR/suricata-compromised.txt" | wc -l)
+        if [ "$count" -gt 0 ]; then
+            total_ips=$((total_ips + $(grep "Intel::ADDR" "$INTEL_DIR/suricata-compromised.txt" | wc -l)))
+            total_domains=$((total_domains + $(grep "Intel::DOMAIN" "$INTEL_DIR/suricata-compromised.txt" | wc -l)))
+            feeds_success=$((feeds_success + 1))
+            echo "    ✅ $count IOCs extraídos das regras de IPs comprometidos"
+        else
+            echo "    ⚠️  Nenhum IOC extraído das regras de IPs comprometidos"
+        fi
+    else
+        feeds_failed=$((feeds_failed + 1))
+        echo "    ❌ Arquivo de regras vazio"
+    fi
+else
+    feeds_failed=$((feeds_failed + 1))
+    echo "    ❌ Falha no download das regras de IPs comprometidos"
+fi
+
+# 8. Suricata - Malware Rules
+echo "  🦠 Emerging Threats - Malware..."
+if curl -s --connect-timeout 30 --max-time 60 \
+    "https://rules.emergingthreats.net/open/suricata/rules/emerging-malware.rules" \
+    -o "$TEMP_DIR/et_malware.rules"; then
+    if [ -s "$TEMP_DIR/et_malware.rules" ]; then
+        process_suricata_rules "$TEMP_DIR/et_malware.rules" "$INTEL_DIR/suricata-malware.txt" "Malware"
+        count=$(grep -v "^#" "$INTEL_DIR/suricata-malware.txt" | wc -l)
+        if [ "$count" -gt 0 ]; then
+            total_ips=$((total_ips + $(grep "Intel::ADDR" "$INTEL_DIR/suricata-malware.txt" | wc -l)))
+            total_domains=$((total_domains + $(grep "Intel::DOMAIN" "$INTEL_DIR/suricata-malware.txt" | wc -l)))
+            feeds_success=$((feeds_success + 1))
+            echo "    ✅ $count IOCs extraídos das regras de Malware"
+        else
+            echo "    ⚠️  Nenhum IOC extraído das regras de Malware"
+        fi
+    else
+        feeds_failed=$((feeds_failed + 1))
+        echo "    ❌ Arquivo de regras vazio"
+    fi
+else
+    feeds_failed=$((feeds_failed + 1))
+    echo "    ❌ Falha no download das regras de Malware"
+fi
+
+# ========================================================================
 # Atualizar configuração do Zeek
 # ========================================================================
 echo ""
@@ -210,6 +346,9 @@ feeds=(
     "spamhaus-drop.txt"
     "tor-exits.txt"
     "hostfile-domains.txt"
+    "suricata-botcc.txt"
+    "suricata-compromised.txt"
+    "suricata-malware.txt"
 )
 
 config_file="/home/rafael/SIMIR/site/intelligence-framework.zeek"

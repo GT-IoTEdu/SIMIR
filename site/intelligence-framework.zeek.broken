@@ -1,0 +1,48 @@
+# Intelligence# Configurações básicas do framework de inteligência
+redef Intel::read_files += {
+    "/usr/local/zeek/share/zeek/site/intel/malicious-ips.txt",
+    "/usr/local/zeek/share/zeek/site/intel/malicious-domains.txt",
+    "/usr/local/zeek/share/zeek/site/intel/feodo-ips.txt",
+    "/usr/local/zeek/share/zeek/site/intel/hostfile-domains.txt",
+    "/usr/local/zeek/share/zeek/site/intel/spamhaus-drop.txt",
+    "/usr/local/zeek/share/zeek/site/intel/tor-exits.txt",
+    "/usr/local/zeek/share/zeek/site/intel/urlhaus-domains.txt",
+    "/usr/local/zeek/share/zeek/site/intel/suricata-malware.txt"
+}; Simplificado para SIMIR
+# Versão básica para testes
+
+@load base/frameworks/intel
+@load base/frameworks/notice
+
+module Intelligence;
+
+export {
+    redef enum Notice::Type += {
+        Intel_Hit
+    };
+}
+
+# Configurações básicas do framework de inteligência
+redef Intel::read_files += {
+    "/usr/local/zeek/share/zeek/site/intel/malicious-ips.txt",
+    "/usr/local/zeek/share/zeek/site/intel/feodo-ips.txt",
+    "/usr/local/zeek/share/zeek/site/intel/hostfile-domains.txt",
+    "/usr/local/zeek/share/zeek/site/intel/spamhaus-drop.txt",
+    "/usr/local/zeek/share/zeek/site/intel/tor-exits.txt",
+    "/usr/local/zeek/share/zeek/site/intel/urlhaus-domains.txt",
+    "/usr/local/zeek/share/zeek/site/intel/suricata-malware.txt"
+};
+
+# Evento básico quando um indicador é encontrado
+event Intel::match(s: Intel::Seen, items: set[Intel::Item])
+{
+    for ( item in items ) {
+        local msg = fmt("Threat Intelligence Match: %s (Tipo: %s, Fonte: %s)", 
+                       s$indicator, item$indicator_type, item$meta$source);
+        
+        NOTICE([$note=Intelligence::Intel_Hit,
+                $msg=msg,
+                $src=s$host,
+                $identifier=cat(s$indicator)]);
+    }
+}

@@ -1,0 +1,4 @@
+#fields	indicator	indicator_type	meta.source	meta.desc
+# Este arquivo contém URLs maliciosas
+# Adicione URLs maliciosas aqui no formato:
+# http://malicious.example.com/path	Intel::URL	Manual	URL maliciosa manual

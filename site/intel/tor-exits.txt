@@ -1088,7 +1088,6 @@
 178.162.175.5	Intel::ADDR	TorProject	Tor exit node
 152.53.210.165	Intel::ADDR	TorProject	Tor exit node
 109.228.160.190	Intel::ADDR	TorProject	Tor exit node
-103.87.213.103	Intel::ADDR	TorProject	Tor exit node
 93.94.52.229	Intel::ADDR	TorProject	Tor exit node
 192.210.136.31	Intel::ADDR	TorProject	Tor exit node
 107.173.187.181	Intel::ADDR	TorProject	Tor exit node
