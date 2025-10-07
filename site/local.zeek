@@ -12,7 +12,7 @@ redef ignore_checksums = T;
 @load ./simir-notice-standards.zeek
 
 # Carrega detectores personalizados - Versões de Produção
-@load ./port-scan-detector-production.zeek
+@load ./port-scan-detector.zeek
 @load ./brute-force-detector.zeek
 @load ./intelligence-framework.zeek
 
