@@ -8,8 +8,11 @@
 # Resolve problema onde Zeek descarta pacotes com checksums incorretos
 redef ignore_checksums = T;
 
-# Carrega detectores personalizados
-@load ./port-scan-detector.zeek
+# Carrega padrões de mensagens
+@load ./simir-notice-standards.zeek
+
+# Carrega detectores personalizados - Versões de Produção
+@load ./port-scan-detector-production.zeek
 @load ./brute-force-detector.zeek
 @load ./intelligence-framework.zeek
 
