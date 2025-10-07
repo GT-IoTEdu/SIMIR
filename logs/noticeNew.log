@@ -1,0 +1,15 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	notice
+#open	2025-10-07-20-25-44
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	fuid	file_mime_type	file_desc	proto	note	msg	sub	src	dst	p	n	peer_descr	actions	email_dest	suppress_for	remote_location.country_code	remote_location.region	remote_location.city	remote_location.latitude	remote_location.longitude
+#types	time	string	addr	port	addr	port	string	string	string	enum	enum	string	string	addr	addr	port	count	string	set[enum]	set[string]	interval	string	string	string	double	double
+0.000000	-	-	-	-	-	-	-	-	-	Intel_Framework_Ready	[SYSTEM] [INFO] SIMIR Intelligence Framework pronto para produção	-	-	-	-	-	-	Notice::ACTION_LOG	(empty)	3600.000000	-	-	-	-	-
+1759879545.689328	-	-	-	-	-	-	-	-	-	Malicious_Domain_Hit	[THREAT-INTEL] [HIGH] [DOMAIN] Indicator: github.com | Source: Suricata-Malware | Confidence: Domínio de Malware detectado via regras Suricata	-	-	-	-	-	-	Notice::ACTION_LOG	(empty)	300.000000	-	-	-	-	-
+1759879547.686714	-	-	-	-	-	-	-	-	-	Malicious_IP_Hit	[THREAT-INTEL] [HIGH] [IP] Indicator: 1.1.1.1 | Source: TEST-MALWARE | Confidence: IP malicioso para teste | Connection from: [PUBLIC] 1.1.1.1	-	1.1.1.1	-	-	-	-	Notice::ACTION_LOG	(empty)	300.000000	-	-	-	-	-
+1759879547.703294	-	-	-	-	-	-	-	-	-	Malicious_Domain_Hit	[THREAT-INTEL] [HIGH] [DOMAIN] Indicator: example.com | Source: Suricata-Malware | Confidence: Domínio de Malware detectado via regras Suricata	-	-	-	-	-	-	Notice::ACTION_LOG	(empty)	300.000000	-	-	-	-	-
+1759879609.974497	-	-	-	-	-	-	-	-	-	PortScan::Closed_Port_Access	Múltiplas tentativas em portas fechadas de fe80::d6c1:c8ff:fe1c:ea4f (8 tentativas)	-	fe80::d6c1:c8ff:fe1c:ea4f	-	-	-	-	Notice::ACTION_LOG	(empty)	3600.000000	-	-	-	-	-
+1759879609.974497	-	-	-	-	-	-	-	-	-	PortScan::Closed_Port_Access	Múltiplas tentativas em portas fechadas de 2804:14d:ba6b:1000::1 (8 tentativas)	-	2804:14d:ba6b:1000::1	-	-	-	-	Notice::ACTION_LOG	(empty)	3600.000000	-	-	-	-	-
+1759879664.221205	-	-	-	-	-	-	-	-	-	PortScan::Closed_Port_Access	Múltiplas tentativas em portas fechadas de fe80::1a31:bfff:fed5:2eb9 (90 tentativas)	-	fe80::1a31:bfff:fed5:2eb9	-	-	-	-	Notice::ACTION_LOG	(empty)	3600.000000	-	-	-	-	-

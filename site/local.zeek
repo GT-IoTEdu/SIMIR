@@ -11,24 +11,21 @@ redef ignore_checksums = T;
 # Carrega padrões de mensagens
 @load ./simir-notice-standards.zeek
 
-# Carrega detectores personalizados - Versões de Produção
+# Carrega detectores personalizados
+# Use @load ./intel-debug.zeek para modo diagnóstico simplificado
 @load ./port-scan-detector.zeek
 @load ./brute-force-detector.zeek
 @load ./intelligence-framework.zeek
 
 # Configurações de logging
-redef LogAscii::use_json = T;
+# Usar formato padrão TSV do Zeek ao invés de JSON para compatibilidade
+# redef LogAscii::use_json = T;
 
-# Configurações para Notice (alertas)
-# Garante que ALL os notices sejam logados
-hook Notice::policy(n: Notice::Info)
+# Configuração para garantir que todos os notices sejam logados
+hook Notice::policy(n: Notice::Info) &priority=10
 {
     # Força log para todos os notices
     add n$actions[Notice::ACTION_LOG];
-    
-    # Garante que o arquivo notice.log seja sempre criado
-    if (|n$actions| == 0)
-        add n$actions[Notice::ACTION_LOG];
 }
 
 # Configuração adicional removida devido a incompatibilidade

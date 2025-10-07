@@ -86,25 +86,28 @@ echo "=============================================================="
 log "Executando teste funcional com IOC conhecido..."
 
 # Criar um IOC de teste conhecido
-TEST_IOC_IP="198.51.100.100"  # IP de documentação RFC
-printf "# IOC de Teste\n$TEST_IOC_IP\tIntel::ADDR\tTEST-IOC\tTeste automatizado do framework\n" > /home/rafael/SIMIR/site/intel/test-auto.txt
+TEST_IOC_IP="1.1.1.1"      # IP real para gerar tráfego
+TEST_IOC_DOMAIN="example.com"  # Domínio real para gerar tráfego DNS/HTTP
+printf "#fields\tindicator\tindicator_type\tmeta.source\tmeta.desc\n%s\tIntel::ADDR\tTEST-IOC\tTeste automatizado do framework\n%s\tIntel::DOMAIN\tTEST-IOC\tTeste automatizado do framework\n" "$TEST_IOC_IP" "$TEST_IOC_DOMAIN" > /home/rafael/SIMIR/site/intel/test-auto.txt
 
-log "IOC de teste criado: $TEST_IOC_IP"
+log "IOC de teste criado: IP=$TEST_IOC_IP | Domínio=$TEST_IOC_DOMAIN"
 
 # Contar notices antes do teste
 NOTICE_COUNT_BEFORE=$(wc -l < /home/rafael/SIMIR/logs/notice.log 2>/dev/null || echo "0")
 log "Notices antes do teste: $NOTICE_COUNT_BEFORE"
 
-# Simular tráfego para o IOC
-log "Tentando ping no IOC de teste..."
-timeout 5 ping -c 2 $TEST_IOC_IP > /dev/null 2>&1 || log "Ping falhou (esperado se IP não responde)"
+# Simular tráfego para o IOC (IP)
+log "Simulando requisição HTTP para o IOC IP..."
+timeout 5 curl -sI "http://$TEST_IOC_IP" > /dev/null 2>&1 || log "Requisição HTTP falhou (verifique conectividade)"
 
-# Simular DNS lookup
-log "Simulando consulta DNS..."
-nslookup google.com > /dev/null 2>&1
+# Simular DNS e HTTP para o domínio IOC
+log "Simulando consulta DNS para IOC domínio..."
+nslookup "$TEST_IOC_DOMAIN" > /dev/null 2>&1 || log "Consulta DNS falhou"
+log "Simulando requisição HTTP para IOC domínio..."
+timeout 5 curl -sI "http://$TEST_IOC_DOMAIN" > /dev/null 2>&1 || log "Requisição HTTP para domínio falhou"
 
-log "Aguardando processamento pelo Zeek (10 segundos)..."
-sleep 10
+log "Aguardando processamento pelo Zeek (12 segundos)..."
+sleep 12
 
 # Contar notices após teste
 NOTICE_COUNT_AFTER=$(wc -l < /home/rafael/SIMIR/logs/notice.log 2>/dev/null || echo "0")
@@ -250,6 +253,6 @@ log "Teste completo finalizado"
 echo "=============================================================="
 
 # Limpeza
-rm -f /home/rafael/SIMIR/site/intel/test-auto.txt
+printf "#fields\tindicator\tindicator_type\tmeta.source\tmeta.desc\n" > /home/rafael/SIMIR/site/intel/test-auto.txt
 
 exit $EXIT_CODE

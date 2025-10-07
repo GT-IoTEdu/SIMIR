@@ -1,0 +1,2 @@
+#fields	indicator	indicator_type	meta.source	meta.desc
+1.1.1.1	Intel::ADDR	TEST-MALWARE	IP malicioso para teste

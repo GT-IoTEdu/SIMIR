@@ -3,6 +3,7 @@
 # Sistema robusto de detecção de ameaças baseado em Intelligence
 
 @load base/frameworks/intel
+@load policy/frameworks/intel/seen
 @load base/frameworks/notice
 @load ./simir-notice-standards.zeek
 
@@ -34,6 +35,8 @@ export {
 # Configurações do framework de inteligência
 redef Intel::read_files += {
     "/usr/local/zeek/share/zeek/site/intel/test-simple.txt",
+    "/usr/local/zeek/share/zeek/site/intel/test-detection.txt",
+    "/usr/local/zeek/share/zeek/site/intel/test-auto.txt",
     "/usr/local/zeek/share/zeek/site/intel/malicious-ips.txt",
     "/usr/local/zeek/share/zeek/site/intel/malicious-domains.txt",
     "/usr/local/zeek/share/zeek/site/intel/feodo-ips.txt",
@@ -82,13 +85,19 @@ event zeek_init()
 # Evento principal quando há match de intelligence - Versão Produção
 event Intel::match(s: Intel::Seen, items: set[Intel::Item])
 {
+    local has_host = s?$host;
+    local host_label = has_host ? SIMIR::format_ip(s$host) : "<unknown>";
+
+    # DEBUG: Sempre print para ver se está sendo chamado
+    print fmt("INTEL MATCH DETECTADO! Indicador: %s, Host: %s", s$indicator, host_label);
+    
     # Incrementa estatísticas
     ++intel_stats["matches_detected"];
     
     if (!production_mode) {
         print fmt("=== INTELLIGENCE MATCH DETECTADO ===");
         print fmt("Indicador: %s", s$indicator);
-        print fmt("Host: %s", s$host);
+        print fmt("Host: %s", host_label);
         print fmt("Contexto: %s", s$where);
     }
     
@@ -96,69 +105,72 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
     
     for ( item in items ) {
         ++matches_processados;
-        local notice_type = Intelligence_Match;
-        local confidence = item$meta?$desc ? item$meta$desc : "MEDIUM";
-        local source = item$meta$source;
+    local notice_type = Intelligence_Match;
+    local confidence = item$meta?$desc ? item$meta$desc : "MEDIUM";
+    local source = item$meta?$source ? item$meta$source : "UNKNOWN";
+    local notice_info: Notice::Info;
+    local notice_msg = "";
         
         # Filtra matches por nível de confiança se configurado
         if (min_confidence_level == "HIGH" && confidence != "HIGH" && confidence != "CRITICAL") {
-            continue;
+            return;
         }
         
         # Determina tipo específico e gera mensagem padronizada
         switch ( item$indicator_type ) {
             case Intel::ADDR:
                 notice_type = Malicious_IP_Hit;
-                local msg_ip = SIMIR::format_intel_message(s$indicator, "IP", source, confidence);
+                notice_msg = SIMIR::format_intel_message(s$indicator, "IP", source, confidence);
                 
                 # Contexto adicional para IPs
-                if (enable_geo_context && s?$host) {
-                    msg_ip += fmt(" | Connection from: %s", SIMIR::format_ip(s$host));
+                if (enable_geo_context && has_host) {
+                    notice_msg += fmt(" | Connection from: %s", host_label);
                 }
                 
-                NOTICE([$note=notice_type,
-                        $msg=msg_ip,
-                        $src=s$host,
-                        $identifier=fmt("intel_ip_%s", s$indicator),
-                        $suppress_for=300sec]);
+                notice_info = [$note=notice_type,
+                               $msg=notice_msg,
+                               $identifier=fmt("intel_ip_%s", s$indicator),
+                               $suppress_for=300sec];
                 break;
                 
             case Intel::DOMAIN:
                 notice_type = Malicious_Domain_Hit;
-                local msg_domain = SIMIR::format_intel_message(s$indicator, "DOMAIN", source, confidence);
+                notice_msg = SIMIR::format_intel_message(s$indicator, "DOMAIN", source, confidence);
                 
-                if (s?$host) {
-                    msg_domain += fmt(" | Queried by: %s", SIMIR::format_ip(s$host));
+                if (has_host) {
+                    notice_msg += fmt(" | Queried by: %s", host_label);
                 }
                 
-                NOTICE([$note=notice_type,
-                        $msg=msg_domain,
-                        $src=s$host,
-                        $identifier=fmt("intel_domain_%s", s$indicator),
-                        $suppress_for=300sec]);
+                notice_info = [$note=notice_type,
+                               $msg=notice_msg,
+                               $identifier=fmt("intel_domain_%s", s$indicator),
+                               $suppress_for=300sec];
                 break;
                 
             case Intel::URL:
                 notice_type = Malicious_URL_Hit;
-                local msg_url = SIMIR::format_intel_message(s$indicator, "URL", source, confidence);
+                notice_msg = SIMIR::format_intel_message(s$indicator, "URL", source, confidence);
                 
-                NOTICE([$note=notice_type,
-                        $msg=msg_url,
-                        $src=s$host,
-                        $identifier=fmt("intel_url_%s", md5_hash(s$indicator)),
-                        $suppress_for=300sec]);
+                notice_info = [$note=notice_type,
+                               $msg=notice_msg,
+                               $identifier=fmt("intel_url_%s", md5_hash(s$indicator)),
+                               $suppress_for=300sec];
                 break;
                 
             default:
-                local msg_generic = SIMIR::format_intel_message(s$indicator, fmt("%s", item$indicator_type), source, confidence);
+                notice_msg = SIMIR::format_intel_message(s$indicator, fmt("%s", item$indicator_type), source, confidence);
                 
-                NOTICE([$note=Intelligence_Match,
-                        $msg=msg_generic,
-                        $src=s$host,
-                        $identifier=fmt("intel_generic_%s", md5_hash(s$indicator)),
-                        $suppress_for=300sec]);
+                notice_info = [$note=Intelligence_Match,
+                               $msg=notice_msg,
+                               $identifier=fmt("intel_generic_%s", md5_hash(s$indicator)),
+                               $suppress_for=300sec];
                 break;
         }
+        
+        if (has_host)
+            notice_info$src = s$host;
+        
+        NOTICE(notice_info);
         
         # Incrementa contador de matches de alta confiança
         if (confidence == "HIGH" || confidence == "CRITICAL") {
