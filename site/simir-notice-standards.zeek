@@ -20,6 +20,9 @@ export {
     
     # Função para formatação de mensagens de brute force
     global format_bruteforce_message: function(service: string, src: addr, target: addr, attempts: count): string;
+
+    # Função para formatação de mensagens de DDoS/DoS
+    global format_ddos_message: function(target: addr, service_port: port, attempts: count, unique_sources: count, attack_type: string): string;
     
     # Níveis de severidade padronizados
     type Severity: enum { LOW, MEDIUM, HIGH, CRITICAL };
@@ -77,4 +80,14 @@ function format_bruteforce_message(service: string, src: addr, target: addr, att
     
     return fmt("[BRUTE-FORCE] [%s] Service: %s | Attacker: %s | Target: %s | Attempts: %d", 
                severity, service, format_ip(src), format_ip(target), attempts);
+}
+
+function format_ddos_message(target: addr, service_port: port, attempts: count, unique_sources: count, attack_type: string): string
+{
+    local severity = "HIGH";
+    if (attempts >= 200 || unique_sources >= 25)
+        severity = "CRITICAL";
+    
+    return fmt("[DDOS] [%s] Target: %s:%s | Type: %s | Requests: %d | Sources: %d",
+               severity, format_ip(target), port_to_count(service_port), attack_type, attempts, unique_sources);
 }

@@ -6,6 +6,7 @@
 @load base/protocols/ssh
 @load base/protocols/ftp
 @load base/protocols/http
+@load ./simir-notice-standards.zeek
 
 module BruteForce;
 
@@ -31,6 +32,7 @@ export {
     global generic_failed_threshold = 8;  # Tentativas genéricas falhadas
     global time_window = 10min;           # Janela de tempo para análise
     global success_after_failures = 3;    # Sucessos após falhas para alerta
+    global monitor_outbound_ssh = F &redef;    # Permite monitorar tentativas internas para externos
     
     # Estrutura para rastrear tentativas de autenticação
     type auth_tracker: record {
@@ -108,9 +110,9 @@ event ftp_reply(c: connection, code: count, msg: string, cont_resp: bool)
     # Verifica se atingiu o threshold para FTP
     if (tracker$failed_attempts >= ftp_failed_threshold) {
         NOTICE([$note=FTP_Brute_Force,
-                $msg=fmt("Ataque de força bruta FTP detectado de %s: %d tentativas falhadas em %d hosts", 
-                        orig, tracker$failed_attempts, |tracker$targets|),
+                $msg=SIMIR::format_bruteforce_message("FTP", orig, dest, tracker$failed_attempts),
                 $src=orig,
+                $dst=dest,
                 $identifier=cat(orig, "ftp_brute")]);
     }
 }
@@ -145,9 +147,9 @@ event http_reply(c: connection, version: string, code: count, reason: string)
     # Verifica se atingiu o threshold para HTTP
     if (tracker$failed_attempts >= http_failed_threshold) {
         NOTICE([$note=HTTP_Brute_Force,
-                $msg=fmt("Ataque de força bruta HTTP detectado de %s: %d tentativas falhadas (401/403) em %d hosts", 
-                        orig, tracker$failed_attempts, |tracker$targets|),
+                $msg=SIMIR::format_bruteforce_message("HTTP", orig, dest, tracker$failed_attempts),
                 $src=orig,
+                $dst=dest,
                 $identifier=cat(orig, "http_brute")]);
     }
 }
@@ -177,7 +179,7 @@ event connection_state_remove(c: connection)
             return;
         
         # Ignora endereços privados fazendo conexões para a internet
-        if (Site::is_private_addr(orig) && !Site::is_private_addr(dest))
+        if (!monitor_outbound_ssh && Site::is_private_addr(orig) && !Site::is_private_addr(dest))
             return;
         
         # Inicializa tracker se não existir
@@ -191,15 +193,14 @@ event connection_state_remove(c: connection)
         ++tracker$consecutive_failures;
         add tracker$targets[dest];
         tracker$last_seen = network_time();
-        if (tracker?$last_failure_time)
-            tracker$last_failure_time = network_time();
+        tracker$last_failure_time = network_time();
         
         # Verifica se atingiu o threshold para SSH
         if (tracker$failed_attempts >= ssh_failed_threshold) {
             NOTICE([$note=SSH_Brute_Force,
-                    $msg=fmt("Ataque de força bruta SSH detectado de %s: %d tentativas falhadas em %d hosts", 
-                            orig, tracker$failed_attempts, |tracker$targets|),
+                    $msg=SIMIR::format_bruteforce_message("SSH", orig, dest, tracker$failed_attempts),
                     $src=orig,
+                    $dst=dest,
                     $identifier=cat(orig, "ssh_brute")]);
         }
         return;
@@ -242,15 +243,14 @@ event connection_state_remove(c: connection)
     ++generic_tracker$consecutive_failures;
     add generic_tracker$targets[dest];
     generic_tracker$last_seen = network_time();
-    if (generic_tracker?$last_failure_time)
-        generic_tracker$last_failure_time = network_time();
+    generic_tracker$last_failure_time = network_time();
     
     # Verifica se atingiu o threshold genérico (apenas se não foi detectado por outros métodos)
     if (generic_tracker$service == "Generic" && generic_tracker$failed_attempts >= generic_failed_threshold) {
         NOTICE([$note=Generic_Brute_Force,
-                $msg=fmt("Possível ataque de força bruta detectado de %s: %d conexões falhadas para portas de autenticação em %d hosts", 
-                        orig, generic_tracker$failed_attempts, |generic_tracker$targets|),
+                $msg=SIMIR::format_bruteforce_message("Generic", orig, dest, generic_tracker$failed_attempts),
                 $src=orig,
+                $dst=dest,
                 $identifier=cat(orig, "generic_brute")]);
     }
 }

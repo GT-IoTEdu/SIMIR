@@ -16,6 +16,7 @@ redef ignore_checksums = T;
 @load ./port-scan-detector.zeek
 @load ./brute-force-detector.zeek
 @load ./intelligence-framework.zeek
+@load ./ddos-detector.zeek
 
 # Configurações de logging
 # Usar formato padrão TSV do Zeek ao invés de JSON para compatibilidade

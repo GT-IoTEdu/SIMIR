@@ -64,6 +64,7 @@ run_test "Container SIMIR está executando" "docker ps | grep -q SIMIR_Z"
 run_test "Sintaxe do local.zeek" "docker exec SIMIR_Z zeek -parse-only /usr/local/zeek/share/zeek/site/local.zeek > /dev/null 2>&1"
 run_test "Sintaxe do intelligence-framework.zeek" "docker exec SIMIR_Z zeek -parse-only /usr/local/zeek/share/zeek/site/intelligence-framework.zeek > /dev/null 2>&1"
 run_test "Sintaxe do port-scan-detector.zeek" "docker exec SIMIR_Z zeek -parse-only /usr/local/zeek/share/zeek/site/port-scan-detector.zeek > /dev/null 2>&1"
+run_test "Sintaxe do ddos-detector.zeek" "docker exec SIMIR_Z zeek -parse-only /usr/local/zeek/share/zeek/site/ddos-detector.zeek > /dev/null 2>&1"
 
 # 2. VALIDAÇÃO DO INTELLIGENCE FRAMEWORK
 echo ""
@@ -170,10 +171,90 @@ else
     ((TOTAL_TESTS++))
 fi
 
-# 6. VALIDAÇÃO DOS LOGS E ARQUIVOS
+# 6. TESTE DETECÇÃO DE FORÇA BRUTA
 echo ""
 echo "=============================================================="
-echo "6. VALIDAÇÃO DOS LOGS E ARQUIVOS"
+echo "6. TESTE DETECÇÃO DE FORÇA BRUTA"
+echo "=============================================================="
+
+BRUTE_ALERTS_BEFORE=$(grep -c "BruteForce::" /home/rafael/SIMIR/logs/notice.log 2>/dev/null)
+BRUTE_ALERTS_BEFORE=${BRUTE_ALERTS_BEFORE:-0}
+
+log "Simulando múltiplas falhas de autenticação HTTP (401)..."
+
+BRUTE_ENDPOINT="http://httpbingo.org/status/401"
+BRUTE_REQUESTS=12
+BRUTE_SUCCESS=0
+
+for i in $(seq 1 $BRUTE_REQUESTS); do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BRUTE_ENDPOINT" || echo "000")
+    if [ "$STATUS" = "401" ]; then
+        BRUTE_SUCCESS=$((BRUTE_SUCCESS + 1))
+    else
+        log "Resposta inesperada na tentativa $i: HTTP $STATUS"
+    fi
+    sleep 0.2
+done
+
+if [ $BRUTE_SUCCESS -lt $BRUTE_REQUESTS ]; then
+    warning "Nem todas as requisições retornaram 401 (sucesso: $BRUTE_SUCCESS/$BRUTE_REQUESTS)"
+fi
+
+sleep 6
+
+BRUTE_ALERTS_AFTER=$(grep -c "BruteForce::" /home/rafael/SIMIR/logs/notice.log 2>/dev/null)
+BRUTE_ALERTS_AFTER=${BRUTE_ALERTS_AFTER:-0}
+NEW_BRUTE_ALERTS=$((BRUTE_ALERTS_AFTER - BRUTE_ALERTS_BEFORE))
+
+((TOTAL_TESTS++))
+if [ $NEW_BRUTE_ALERTS -gt 0 ]; then
+    success "Detector de força bruta gerou alertas ($NEW_BRUTE_ALERTS novos)"
+    ((PASSED_TESTS++))
+else
+    error "Detector de força bruta não gerou alertas durante o teste"
+fi
+
+# 7. TESTE DETECÇÃO DE DDoS/DoS
+echo ""
+echo "=============================================================="
+echo "7. TESTE DETECÇÃO DE DDoS/DoS"
+echo "=============================================================="
+
+DDOS_ALERTS_BEFORE=$(grep -c "DoS_Attack_Detected\|DDoS_Attack_Detected" /home/rafael/SIMIR/logs/notice.log 2>/dev/null)
+DDOS_ALERTS_BEFORE=${DDOS_ALERTS_BEFORE:-0}
+
+log "Simulando tráfego em alto volume para testar detector de DoS/DDoS..."
+if command -v nc >/dev/null 2>&1; then
+    for i in {1..60}; do
+        timeout 1 nc -z "$TEST_IOC_IP" 80 > /dev/null 2>&1 &
+    done
+    wait
+else
+    log "nc não encontrado - utilizando múltiplos requests HTTP como fallback"
+    for i in {1..40}; do
+        timeout 2 curl -s "http://$TEST_IOC_IP" > /dev/null 2>&1 &
+    done
+    wait
+fi
+
+sleep 6
+
+DDOS_ALERTS_AFTER=$(grep -c "DoS_Attack_Detected\|DDoS_Attack_Detected" /home/rafael/SIMIR/logs/notice.log 2>/dev/null)
+DDOS_ALERTS_AFTER=${DDOS_ALERTS_AFTER:-0}
+NEW_DDOS_ALERTS=$((DDOS_ALERTS_AFTER - DDOS_ALERTS_BEFORE))
+
+((TOTAL_TESTS++))
+if [ $NEW_DDOS_ALERTS -gt 0 ]; then
+    success "Detector DDoS/DoS emitiu alertas ($NEW_DDOS_ALERTS novos)"
+    ((PASSED_TESTS++))
+else
+    error "Detector DDoS/DoS não gerou alertas durante o teste"
+fi
+
+# 8. VALIDAÇÃO DOS LOGS E ARQUIVOS
+echo ""
+echo "=============================================================="
+echo "8. VALIDAÇÃO DOS LOGS E ARQUIVOS"
 echo "=============================================================="
 
 run_test "Arquivo conn.log existe" "test -f /home/rafael/SIMIR/logs/conn.log"
@@ -190,10 +271,10 @@ else
     ((TOTAL_TESTS++))
 fi
 
-# 7. ANÁLISE DETALHADA DO NOTICE.LOG
+# 9. ANÁLISE DETALHADA DO NOTICE.LOG
 echo ""
 echo "=============================================================="
-echo "7. ANÁLISE DETALHADA DO NOTICE.LOG"
+echo "9. ANÁLISE DETALHADA DO NOTICE.LOG"
 echo "=============================================================="
 
 log "Analisando conteúdo atual do notice.log..."
@@ -203,16 +284,16 @@ echo "--- MENSAGENS DE NOTICE ATUAIS ---"
 if [ -f /home/rafael/SIMIR/logs/notice.log ]; then
     # Mostrar tipos de notices
     cat /home/rafael/SIMIR/logs/notice.log | jq -r '.note + " " + .msg' 2>/dev/null | tail -10 || \
-    grep -o '"note":"[^"]*"' /home/rafael/SIMIR/logs/notice.log | sort | uniq -c | head -10 2>/dev/null || \
+    grep -o '"note":"[^\"]*"' /home/rafael/SIMIR/logs/notice.log | sort | uniq -c | head -10 2>/dev/null || \
     echo "Arquivo notice.log existe mas formato pode estar inconsistente"
 else
     echo "Arquivo notice.log não encontrado"
 fi
 
-# 8. RESUMO FINAL
+# 10. RESUMO FINAL
 echo ""
 echo "=============================================================="
-echo "8. RESUMO FINAL"
+echo "10. RESUMO FINAL"
 echo "=============================================================="
 
 echo ""
