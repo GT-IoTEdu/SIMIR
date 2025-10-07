@@ -1,2 +1,3 @@
+warning in /usr/local/zeek/spool/installed-scripts-do-not-touch/site/intelligence-framework.zeek, line 55: handler for non-existing event cannot be invoked (Intel::item_inserted)
 listening on enp0s31f6
 

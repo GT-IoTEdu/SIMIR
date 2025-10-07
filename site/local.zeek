@@ -17,8 +17,15 @@ redef ignore_checksums = T;
 redef LogAscii::use_json = T;
 
 # Configurações para Notice (alertas)
-# Habilita logs de notice para todos os alertas
+# Garante que ALL os notices sejam logados
 hook Notice::policy(n: Notice::Info)
 {
+    # Força log para todos os notices
     add n$actions[Notice::ACTION_LOG];
+    
+    # Garante que o arquivo notice.log seja sempre criado
+    if (|n$actions| == 0)
+        add n$actions[Notice::ACTION_LOG];
 }
+
+# Configuração adicional removida devido a incompatibilidade

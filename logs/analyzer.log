@@ -1,0 +1,1 @@
+{"ts":1759875843.219742,"cause":"violation","analyzer_kind":"protocol","analyzer_name":"SSL","uid":"Cae4yZ15fB6f4VSsol","id.orig_h":"192.168.0.31","id.orig_p":42844,"id.resp_h":"192.168.0.2","id.resp_p":8009,"failure_reason":"Invalid version late in TLS connection. Packet reported version: 21588"}

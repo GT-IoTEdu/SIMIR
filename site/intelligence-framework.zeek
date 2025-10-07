@@ -1,8 +1,14 @@
 # Intelligence Framework para SIMIR - Versão Definitiva
 # Compatível com Zeek 7.2.2 - Sem emojis e com sintaxe corrigida
+# Corrigido: Removidos eventos incompatíveis e emojis Unicode
 
 @load base/frameworks/intel
 @load base/frameworks/notice
+
+# Verificação de compatibilidade com versão do Zeek
+@if (Version::info$version_number < 70200)
+    @error "Este script requer Zeek 7.2.0 ou superior"
+@endif
 
 export {
     redef enum Notice::Type += {
@@ -32,13 +38,20 @@ event zeek_init()
     print "SIMIR Intelligence Framework INICIADO";
     print fmt("Total de feeds configurados: %d", |Intel::read_files|);
     
+    # Lista todos os feeds configurados para debug
+    for (feed in Intel::read_files) {
+        print fmt("Feed configurado: %s", feed);
+    }
+    
     # Gera notice de teste para verificar funcionamento
     NOTICE([$note=Intel_Framework_Test,
             $msg="SIMIR Intelligence Framework iniciado com sucesso",
             $identifier="intel_startup_test"]);
     
-    print "Notice de teste gerado";
+    print "Notice de teste gerado com sucesso";
 }
+
+# Evento removido - Intel::item_inserted não existe no Zeek 7.2.2
 
 # Evento removido devido a incompatibilidade com Zeek 7.2.2
 
@@ -47,10 +60,15 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
 {
     print fmt("=== INTELLIGENCE MATCH DETECTADO ===");
     print fmt("Indicador: %s", s$indicator);
-    print fmt("Host: %s", s$host);
+    print fmt("Host origem: %s", s$host);
     print fmt("Onde visto: %s", s$where);
+    print fmt("Total de IOCs correspondentes: %d", |items|);
+    
+    # Variável para contar matches processados
+    local matches_processados = 0;
     
     for ( item in items ) {
+        ++matches_processados;
         local notice_type = Intelligence_Match;
         local msg = "";
         
@@ -84,5 +102,5 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
         print fmt("Alerta SIMIR gerado para indicador: %s", s$indicator);
     }
     
-    print "=== FIM DO MATCH ===";
+    print fmt("=== FIM DO MATCH - %d alertas processados ===", matches_processados);
 }
