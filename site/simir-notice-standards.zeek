@@ -65,11 +65,40 @@ function format_intel_message(indicator: string, itype: string, source: string, 
 function format_portscan_message(action: string, src: addr, details: string): string
 {
     local severity = "MEDIUM";
-    if (action == "MULTIPLE_HOSTS")
-        severity = "HIGH";
-    
-    return fmt("[PORT-SCAN] [%s] Source: %s | %s", 
-               severity, format_ip(src), details);
+    local pattern_label = action;
+
+    switch (action) {
+        case "MULTIPLE_HOSTS":
+            severity = "HIGH";
+            pattern_label = "MULTIPLE_HOSTS";
+            break;
+        case "WIDE_SCAN":
+            severity = "HIGH";
+            pattern_label = "WIDE";
+            break;
+        case "VERTICAL":
+            severity = "HIGH";
+            pattern_label = "VERTICAL";
+            break;
+        case "HORIZONTAL":
+            severity = "HIGH";
+            pattern_label = "HORIZONTAL";
+            break;
+        case "TARGETED":
+            severity = "HIGH";
+            pattern_label = "TARGET";
+            break;
+        case "FAILED_PROBING":
+            severity = "MEDIUM";
+            pattern_label = "FAILED";
+            break;
+        default:
+            pattern_label = action;
+            break;
+    }
+
+    return fmt("[PORT-SCAN] [%s] Pattern: %s | Source: %s | %s",
+               severity, pattern_label, format_ip(src), details);
 }
 
 function format_bruteforce_message(service: string, src: addr, target: addr, attempts: count): string
