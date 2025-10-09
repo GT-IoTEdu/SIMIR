@@ -1,0 +1,252 @@
+# Testes Externos com Notebook na Rede
+
+Configuração aplicada:
+
+Interface WAN: enp0s31f6 (internet)
+Interface LAN: enx00e04c672dbf (notebook)
+IP do Gateway: 10.99.99.1
+Subnet: 10.99.99.0/24
+Range DHCP: 10.99.99.10 - 10.99.99.100
+DNS: 8.8.8.8, 8.8.4.4
+
+
+## Visão Geral
+Este guia demonstra como realizar testes de detecção usando um notebook conectado à mesma rede do servidor SIMIR. Os comandos simulam ataques reais que devem ser detectados e registrados em `logs/notice.log`.
+
+## Preparação
+
+### No servidor SIMIR
+1. Identifique o IP do servidor:
+```bash
+ip addr show | grep inet
+```
+
+2. Confirme que o Zeek está capturando na interface correta:
+```bash
+docker logs SIMIR_Z | grep "listening on"
+```
+
+3. Prepare para monitorar os alertas:
+```bash
+tail -f logs/notice.log
+```
+
+### No notebook de testes
+1. Confirme conectividade com o servidor:
+```bash
+ping <IP_DO_SERVIDOR>
+```
+
+2. Instale ferramentas necessárias (Debian/Ubuntu):
+```bash
+sudo apt update
+sudo apt install nmap hydra curl netcat-traditional
+```
+
+## Cenários de Teste
+
+### 1. Detecção de Port Scan
+
+#### Scan horizontal (mesma porta, vários hosts)
+```bash
+# Varre a porta 22 em toda a sub-rede
+nmap -p 22 192.168.1.0/24 -T4 --open
+```
+
+#### Scan vertical (várias portas, um host)
+```bash
+# Varre múltiplas portas no servidor SIMIR
+nmap -p 1-1000 <IP_DO_SERVIDOR> -T4
+```
+
+#### Scan completo agressivo
+```bash
+# Combinação que dispara alertas vertical e horizontal
+nmap -p 1-65535 <IP_DO_SERVIDOR> -T5 --max-retries 1
+```
+
+**Resultado esperado**: Avisos `[PORT-SCAN]` em `logs/notice.log` indicando padrão vertical ou horizontal.
+
+---
+
+### 2. Detecção de Força Bruta
+
+#### SSH Brute Force
+```bash
+# Crie um arquivo com senhas comuns
+cat > senhas.txt << EOF
+123456
+password
+admin
+root
+toor
+EOF
+
+# Execute o ataque de força bruta
+hydra -l root -P senhas.txt ssh://<IP_DO_SERVIDOR> -t 4 -V
+```
+
+#### HTTP Brute Force (formulário de login)
+```bash
+# Simule múltiplas tentativas de autenticação HTTP
+for i in {1..10}; do
+  curl -X POST http://<IP_DO_SERVIDOR>/login \
+    -d "user=admin&pass=wrong$i" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --connect-timeout 2
+  sleep 0.5
+done
+```
+
+#### FTP Brute Force
+```bash
+# Se o servidor tiver FTP ativo
+hydra -l admin -P senhas.txt ftp://<IP_DO_SERVIDOR> -t 4
+```
+
+**Resultado esperado**: Avisos `[BRUTE-FORCE]` identificando origem e protocolo atacado.
+
+---
+
+### 3. Detecção de DDoS/DoS
+
+#### SYN Flood simulado
+```bash
+# Requer privilégios root
+sudo hping3 -S -p 80 --flood --rand-source <IP_DO_SERVIDOR>
+```
+
+#### HTTP Flood
+```bash
+# Gera volume alto de requisições HTTP
+for i in {1..100}; do
+  curl -s http://<IP_DO_SERVIDOR>/ > /dev/null &
+done
+wait
+```
+
+#### UDP Flood
+```bash
+# Envia datagramas UDP em alta frequência
+sudo hping3 --udp -p 53 --flood <IP_DO_SERVIDOR>
+```
+
+**Resultado esperado**: Avisos `[DDOS]` ou `[DOS]` com contadores de conexões por segundo.
+
+---
+
+### 4. Validação de Inteligência (Intel Framework)
+
+#### Acesso a domínio malicioso (simulado)
+```bash
+# O feed site/intel/test-auto.txt inclui example.com
+nslookup example.com
+curl -s http://example.com/ > /dev/null
+```
+
+#### Conexão a IP suspeito
+```bash
+# O feed de teste inclui 1.1.1.1
+ping -c 3 1.1.1.1
+curl -s http://1.1.1.1/ > /dev/null
+```
+
+**Resultado esperado**: Avisos `[INTEL]` com tipo `Malicious_Domain_Hit` ou `Malicious_IP_Hit`.
+
+---
+
+## Validação dos Resultados
+
+### 1. Verifique os alertas gerados
+```bash
+# No servidor SIMIR
+tail -20 logs/notice.log
+```
+
+### 2. Analise logs específicos
+```bash
+# Port scans detectados
+grep "PORT-SCAN" logs/notice.log
+
+# Força bruta
+grep "BRUTE-FORCE" logs/notice.log
+
+# DDoS/DoS
+grep -E "DDOS|DOS" logs/notice.log
+
+# Inteligência
+grep "INTEL" logs/notice.log
+```
+
+### 3. Inspecione metadados de conexões
+```bash
+# Conexões do IP do notebook
+grep "<IP_DO_NOTEBOOK>" logs/conn.log | tail -10
+
+# Requisições HTTP
+grep "<IP_DO_NOTEBOOK>" logs/http.log | tail -10
+```
+
+## Limpeza Após Testes
+
+### No notebook
+```bash
+# Pare processos em background
+killall curl hping3 2>/dev/null
+
+# Remova arquivo temporário
+rm -f senhas.txt
+```
+
+### No servidor SIMIR
+```bash
+# Rotacione logs para nova rodada de testes
+./scripts/simir-control.sh rotate-logs
+
+# Ou reinicie o Zeek para limpar estado
+./scripts/simir-control.sh restart
+```
+
+## Boas Práticas
+
+1. **Isole a rede de testes**: Use VLAN ou rede isolada para evitar alertas legítimos em produção.
+
+2. **Documente cada teste**: Anote horário e comando executado para correlacionar com os logs.
+
+3. **Ajuste limiares**: Se alertas não dispararem, reduza os valores em:
+   - `site/port-scan-detector.zeek` (port_scan_threshold)
+   - `site/brute-force-detector.zeek` (threshold)
+   - `site/ddos-detector.zeek` (dos_threshold)
+
+4. **Valide regularmente**: Execute `./scripts/test-complete.sh` antes dos testes manuais para confirmar que o ambiente está funcional.
+
+## Troubleshooting
+
+### Alertas não são gerados
+- Confirme que o Zeek está capturando pacotes: `docker exec SIMIR_Z zeekctl status`
+- Verifique se a interface está correta: `docker logs SIMIR_Z | grep interface`
+- Valide com tcpdump: `sudo tcpdump -i <INTERFACE> host <IP_DO_NOTEBOOK>`
+
+### Ferramentas não instaladas
+```bash
+# Debian/Ubuntu
+sudo apt install nmap hydra hping3 curl netcat-traditional dnsutils
+
+# Red Hat/CentOS
+sudo yum install nmap hydra hping3 curl nc bind-utils
+
+# Arch Linux
+sudo pacman -S nmap hydra hping curl gnu-netcat bind-tools
+```
+
+### Permissões insuficientes
+```bash
+# Para hping3 e ataques de rede de baixo nível
+sudo -i
+# Execute os comandos como root
+```
+
+## Referências
+- Documentação oficial do nmap: https://nmap.org/book/man.html
+- Guia do Hydra: https://github.com/vanhauser-thc/thc-hydra
+- Manual do hping3: http://www.hping.org/manpage.html
