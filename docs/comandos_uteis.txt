@@ -48,3 +48,6 @@ tail -f logs/notice_PortScan_BruteForce.log | grep -i "intel\|malicious"
 
 - Verificar feeds de inteligência carregados:
 docker exec SIMIR_Z zeek -e "print Intel::read_files;"
+
+- adicionar ip na porta usb
+sudo ip addr add 10.99.99.1/24 dev enx00e04c672dbf && sudo ip link set enx00e04c672dbf up && ip addr show enx00e04c672dbf | grep "inet "

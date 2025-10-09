@@ -72,7 +72,7 @@ event zeek_init()
     
     # Notice padronizado de inicialização
     NOTICE([$note=Intel_Framework_Ready,
-            $msg="[SYSTEM] [INFO] SIMIR Intelligence Framework pronto para produção",
+            $msg=fmt("SIMIR Intelligence Framework initialized | Feeds loaded: %d | Mode: Production", valid_feeds),
             $identifier="intel_production_ready"]);
     
     print fmt("Framework pronto - %d feeds ativos", valid_feeds);
@@ -124,13 +124,13 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
                 
                 # Contexto adicional para IPs
                 if (enable_geo_context && has_host) {
-                    notice_msg += fmt(" | Connection from: %s", host_label);
+                    notice_msg += fmt(" | Device: %s", host_label);
                 }
                 
                 notice_info = [$note=notice_type,
                                $msg=notice_msg,
                                $identifier=fmt("intel_ip_%s", s$indicator),
-                               $suppress_for=300sec];
+                               $suppress_for=3sec];
                 break;
                 
             case Intel::DOMAIN:
@@ -138,23 +138,27 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
                 notice_msg = SIMIR::format_intel_message(s$indicator, "DOMAIN", source, confidence);
                 
                 if (has_host) {
-                    notice_msg += fmt(" | Queried by: %s", host_label);
+                    notice_msg += fmt(" | Device: %s", host_label);
                 }
                 
                 notice_info = [$note=notice_type,
                                $msg=notice_msg,
                                $identifier=fmt("intel_domain_%s", s$indicator),
-                               $suppress_for=300sec];
+                               $suppress_for=3sec];
                 break;
                 
             case Intel::URL:
                 notice_type = Malicious_URL_Hit;
                 notice_msg = SIMIR::format_intel_message(s$indicator, "URL", source, confidence);
                 
+                if (has_host) {
+                    notice_msg += fmt(" | Device: %s", host_label);
+                }
+                
                 notice_info = [$note=notice_type,
                                $msg=notice_msg,
                                $identifier=fmt("intel_url_%s", md5_hash(s$indicator)),
-                               $suppress_for=300sec];
+                               $suppress_for=3sec];
                 break;
                 
             default:
@@ -163,7 +167,7 @@ event Intel::match(s: Intel::Seen, items: set[Intel::Item])
                 notice_info = [$note=Intelligence_Match,
                                $msg=notice_msg,
                                $identifier=fmt("intel_generic_%s", md5_hash(s$indicator)),
-                               $suppress_for=300sec];
+                               $suppress_for=3sec];
                 break;
         }
         

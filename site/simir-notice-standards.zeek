@@ -58,8 +58,9 @@ function format_ip(ip: addr): string
 
 function format_intel_message(indicator: string, itype: string, source: string, confidence: string &default="MEDIUM"): string
 {
-    return fmt("[THREAT-INTEL] [%s] [%s] Indicator: %s | Source: %s | Confidence: %s", 
-               "HIGH", itype, indicator, source, confidence);
+    # Formato: Threat detected: <indicator> | Type: <type> | Source: <source> | Severity: HIGH
+    return fmt("Threat detected: %s | Type: %s | Source: %s | Severity: HIGH", 
+               indicator, itype, source);
 }
 
 function format_portscan_message(action: string, src: addr, details: string): string
@@ -97,8 +98,9 @@ function format_portscan_message(action: string, src: addr, details: string): st
             break;
     }
 
-    return fmt("[PORT-SCAN] [%s] Pattern: %s | Source: %s | %s",
-               severity, pattern_label, format_ip(src), details);
+    # Formato: Port scan detected | Attacker: <ip> | Pattern: <type> | Details: <info> | Severity: <level>
+    return fmt("Port scan detected | Attacker: %s | Pattern: %s | %s | Severity: %s",
+               format_ip(src), pattern_label, details, severity);
 }
 
 function format_bruteforce_message(service: string, src: addr, target: addr, attempts: count): string
@@ -107,8 +109,9 @@ function format_bruteforce_message(service: string, src: addr, target: addr, att
     if (attempts >= 20)
         severity = "CRITICAL";
     
-    return fmt("[BRUTE-FORCE] [%s] Service: %s | Attacker: %s | Target: %s | Attempts: %d", 
-               severity, service, format_ip(src), format_ip(target), attempts);
+    # Formato: Brute force attack detected | Service: <service> | Attacker: <ip> | Target: <ip> | Attempts: <count> | Severity: <level>
+    return fmt("Brute force attack detected | Service: %s | Attacker: %s | Target: %s | Attempts: %d | Severity: %s", 
+               service, format_ip(src), format_ip(target), attempts, severity);
 }
 
 function format_ddos_message(target: addr, service_port: port, attempts: count, unique_sources: count, attack_type: string): string
@@ -117,6 +120,7 @@ function format_ddos_message(target: addr, service_port: port, attempts: count, 
     if (attempts >= 200 || unique_sources >= 25)
         severity = "CRITICAL";
     
-    return fmt("[DDOS] [%s] Target: %s:%s | Type: %s | Requests: %d | Sources: %d",
-               severity, format_ip(target), port_to_count(service_port), attack_type, attempts, unique_sources);
+    # Formato: DDoS attack detected | Target: <ip:port> | Type: <type> | Requests: <count> | Sources: <count> | Severity: <level>
+    return fmt("DDoS attack detected | Target: %s:%s | Type: %s | Requests: %d | Sources: %d | Severity: %s",
+               format_ip(target), port_to_count(service_port), attack_type, attempts, unique_sources, severity);
 }
